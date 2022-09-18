@@ -11,6 +11,22 @@ from vnpy_ctastrategy import (
 from vnpy.trader.constant import Interval
 from vnpy.trader.utility import ArrayManager
 
+"""
+趋势跟踪类：
+    均线(不推荐): sma ema ama
+    震荡指标: rsi超买超卖  MACD柱放大
+趋势突破类:
+    通道: Donchian  Keltner Boll
+    形态: 日内高低点  三角形态
+信号过滤:
+    趋势强度:ATR波动范围 STD标准差
+    趋势方向:DMI过滤  CCI位置  RSI阈值
+出场逻辑:
+    反向信号 固定止盈  固定止损 移动止损
+
+
+"""
+
 
 class WytBarGenerator(BarGenerator):
     """n分钟bar"""
@@ -65,12 +81,13 @@ class WytBarGenerator(BarGenerator):
         self.window_bar.turnover += bar.turnover
         self.window_bar.open_interest = bar.open_interest
 
+        self.interval_count += 1
         if self.last_minute_bar and bar.datetime.minute != self.last_minute_bar.datetime.minute:
-            self.interval_count += 1
             if not self.interval_count % self.window:
                 self.interval_count = 0
                 self.on_window_bar(self.window_bar)
                 self.window_bar = None
+
         self.last_minute_bar = bar
 
 

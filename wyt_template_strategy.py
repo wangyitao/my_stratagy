@@ -5,12 +5,11 @@ from vnpy_ctastrategy import (
     BarData,
     TradeData,
     OrderData,
-    ArrayManager,
 )
 
 from vnpy.trader.constant import Interval
 
-from .wyt_strategy_tools import WytBarGenerator
+from .wyt_strategy_tools import WytBarGenerator, WytArrayManager
 
 
 class WytTemplateStrategy(CtaTemplate):
@@ -21,6 +20,7 @@ class WytTemplateStrategy(CtaTemplate):
     author = "王以涛"
 
     # 定义参数
+    window = 5
 
     # 定义变量
 
@@ -31,14 +31,13 @@ class WytTemplateStrategy(CtaTemplate):
         """"""
         super().__init__(cta_engine, strategy_name, vt_symbol, setting)
 
-        self.bg = WytBarGenerator(self.on_bar)
-        self.bg_5m = WytBarGenerator(
+        self.bg_xm = WytBarGenerator(
             self.on_bar,
-            window=5,
-            on_window_bar=self.on_5min_bar,
+            window=self.window,
+            on_window_bar=self.on_xmin_bar,
             interval=Interval.MINUTE
         )
-        self.am = ArrayManager()
+        self.am = WytArrayManager()
 
     def on_init(self):
         """
@@ -63,18 +62,18 @@ class WytTemplateStrategy(CtaTemplate):
         """
         Callback of new tick data update.
         """
-        self.bg.update_tick(tick)
+        self.bg_xm.update_tick(tick)
 
     def on_bar(self, bar: BarData):
         """
         Callback of new bar data update.
         """
-        self.bg_5m.update_bar(bar)
+        self.bg_xm.update_bar(bar)
 
         # 更新图形界面
         self.put_event()
 
-    def on_5min_bar(self, bar: BarData):
+    def on_xmin_bar(self, bar: BarData):
         pass
 
     def on_order(self, order: OrderData):

@@ -1,8 +1,8 @@
 from datetime import datetime
-from typing import Callable, Tuple, Union
+import re
+from scipy.stats import linregress as scipy_linregress
+from typing import Callable
 
-import numpy as np
-import talib
 from vnpy_ctastrategy import (
     BarData,
     BarGenerator,
@@ -23,9 +23,15 @@ from vnpy.trader.utility import ArrayManager
     趋势方向:DMI过滤  CCI位置  RSI阈值
 出场逻辑:
     反向信号 固定止盈  固定止损 移动止损
-
-
 """
+
+
+def get_vt_step_and_num(vt):
+    vts = {"i": [0.5, 100], "cu": [10, 5], "ni": [10, 1], "sn": [10, 1], "bc": [10, 5], "au": [0.02, 1000], "ag": [1, 15], "lh": [5, 16], "sc": [0.1, 1000], "ru": [5, 10], "nr": [5, 10], "jm": [0.5, 60], "j": [0.5, 100], "ss": [5, 5], "al": [5, 5], "zn": [5, 5], "pb": [5, 5], "cf": [5, 5], "cy": [5, 5], "cj": [5, 5], "b": [1, 10], "bu": [1, 10], "ma": [1, 10], "eg": [1, 10], "fu": [1, 10], "rb": [
+        1, 10], "hc": [1, 10], "a": [1, 10], "m": [1, 10], "oi": [1, 10], "rm": [1, 10], "c": [1, 10], "cs": [1, 10], "jd": [1, 10], "sr": [1, 10], "ap": [1, 10], "pf": [2, 5], "sf": [2, 5], "sm": [2, 5], "pk": [2, 5], "ta": [2, 5], "l": [1, 5], "pp": [1, 5], "v": [1, 5], "eb": [1, 5], "fg": [1, 20], "ur": [1, 20], "sa": [1, 20], "pg": [1, 20], "sp": [2, 10], "y": [2, 10], "p": [2, 10]}
+    need_vt = re.findall('([a-z]+)', str(vt).lower())
+    if need_vt:
+        return vts.get(need_vt[0], [])
 
 
 class WytBarGenerator(BarGenerator):
@@ -96,17 +102,16 @@ class WytArrayManager(ArrayManager):
         super().__init__(size)
 
     # 扩展指标
-    def donchian(
-            self, n: int, array: bool = False) -> Union[
-            Tuple[np.ndarray, np.ndarray],
-            Tuple[float, float],
-    ]:
+    def linregress(self, n: int):
         """
-        Donchian Channel.
+        均值回归
         """
-        up: np.ndarray = talib.MAX(self.high, n)
-        down: np.ndarray = talib.MIN(self.low, n)
+        high_am = max(self.high[-n:])
+        low_am = min(self.low[-n:])
+        avg_value = sum([sum([high_am, low_am]) / 2, self.sma(n)]) / 2
+        x = [range(n)]
+        y = self.close[-n:] - avg_value
+        val = scipy_linregress(x, y)
+        linregress_value = val.intercept + val.slope * n
 
-        if array:
-            return up, down
-        return up[-1], down[-1]
+        return linregress_value
